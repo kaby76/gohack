@@ -383,7 +383,10 @@ func PredictionModeresolvesToJustOneViableAlt(altsets []*BitSet) int {
 // {@link BitSet//cardinality cardinality} &gt 1, otherwise {@code false}
 //
 func PredictionModeallSubsetsConflict(altsets []*BitSet) bool {
-	return !PredictionModehasNonConflictingAltSet(altsets)
+	result := !PredictionModehasNonConflictingAltSet(altsets)
+//	fmt.Print("b = ")
+//	fmt.Println(result)
+	return result
 }
 
 //

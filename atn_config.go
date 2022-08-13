@@ -183,7 +183,7 @@ func (b *BaseATNConfig) hash() int {
 func (b *BaseATNConfig) String() string {
 	var s1, s2, s3 string
 	if b == nil {
-		return "atn_config nil";
+		return "null";
 	}
 	if b.context != nil {
 		s1 = ",[" + fmt.Sprint(b.context) + "]"

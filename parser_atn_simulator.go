@@ -71,7 +71,7 @@ func (p *ParserATNSimulator) reset() {
 
 func (p *ParserATNSimulator) AdaptivePredict(input TokenStream, decision int, outerContext ParserRuleContext) int {
 	if ParserATNSimulatorDebug || ParserATNSimulatorListATNDecisions {
-		fmt.Println("AdaptivePredict decision " + strconv.Itoa(decision) +
+		fmt.Println("adaptivePredict decision " + strconv.Itoa(decision) +
 			" exec LA(1)==" + p.getLookaheadName(input) +
 			" line " + strconv.Itoa(input.LT(1).GetLine()) + ":" +
 			strconv.Itoa(input.LT(1).GetColumn()))
@@ -144,7 +144,7 @@ func (p *ParserATNSimulator) AdaptivePredict(input TokenStream, decision int, ou
 
 	alt := p.execATN(dfa, s0, input, index, outerContext)
 	if ParserATNSimulatorDebug {
-		fmt.Println("DFA after predictATN: " + dfa.String(p.parser.GetLiteralNames(), nil))
+		fmt.Println("DFA after predictATN: " + dfa.String(p.parser.GetSymbolicNames(), nil))
 	}
 	return alt
 
@@ -331,7 +331,7 @@ func (p *ParserATNSimulator) computeTargetState(dfa *DFA, previousD *DFAState, t
 	if ParserATNSimulatorDebug {
 		altSubSets := PredictionModegetConflictingAltSubsets(reach)
 		fmt.Println("SLL altSubSets=" + fmt.Sprint(altSubSets) +
-			", previous=" + previousD.configs.String() +
+//			", previous=" + previousD.configs.String() +
 			", configs=" + reach.String() +
 			", predict=" + strconv.Itoa(predictedAlt) +
 			", allSubsetsConflict=" +
@@ -533,9 +533,9 @@ func (p *ParserATNSimulator) computeReachSet(closure ATNConfigSet, t int, fullCt
 			if target != nil {
 				cfg := NewBaseATNConfig4(c, target)
 				intermediate.Add(cfg, p.mergeCache)
-				if ParserATNSimulatorDebug {
-					fmt.Println("added " + cfg.String() + " to intermediate")
-				}
+				//				if ParserATNSimulatorDebug {
+				//					fmt.Println("added " + cfg.String() + " to intermediate")
+				//				}
 			}
 		}
 	}
@@ -981,7 +981,7 @@ func (p *ParserATNSimulator) closure(config ATNConfig, configs ATNConfigSet, clo
 func (p *ParserATNSimulator) closureCheckingStopState(config ATNConfig, configs ATNConfigSet, closureBusy Set, collectPredicates, fullCtx bool, depth int, treatEOFAsEpsilon bool) {
 	if ParserATNSimulatorDebug {
 		fmt.Println("closure(" + config.String() + ")")
-		fmt.Println("configs(" + configs.String() + ")")
+		//		fmt.Println("configs(" + configs.String() + ")")
 		if config.GetReachesIntoOuterContext() > 50 {
 			panic("problem")
 		}
@@ -1104,7 +1104,7 @@ func (p *ParserATNSimulator) canDropLoopEntryEdgeInLeftRecursiveRule(config ATNC
 	// left-recursion elimination. For efficiency, also check if
 	// the context has an empty stack case. If so, it would mean
 	// global FOLLOW so we can't perform optimization
-	if startLoop, ok := _p.(StarLoopEntryState); !ok || !startLoop.precedenceRuleDecision || config.GetContext().isEmpty() || config.GetContext().hasEmptyPath() {
+	if startLoop, ok := _p.(*StarLoopEntryState); !ok || !startLoop.precedenceRuleDecision || config.GetContext().isEmpty() || config.GetContext().hasEmptyPath() {
 		return false
 	}
 
@@ -1118,7 +1118,8 @@ func (p *ParserATNSimulator) canDropLoopEntryEdgeInLeftRecursiveRule(config ATNC
 		}
 	}
 
-	decisionStartState := _p.(BlockStartState).GetTransitions()[0].getTarget().(BlockStartState)
+	decisionStartState := _p.GetTransitions()[0].getTarget().(BlockStartState)
+//	decisionStartState := _p.(BlockStartState).GetTransitions()[0].getTarget().(BlockStartState)
 	blockEndStateNum := decisionStartState.getEndState().stateNumber
 	blockEndState := p.atn.states[blockEndStateNum].(*BlockEndState)
 
@@ -1355,12 +1356,12 @@ func (p *ParserATNSimulator) GetTokenName(t int) string {
 		return "EOF"
 	}
 
-	if p.parser != nil && p.parser.GetLiteralNames() != nil {
-		if t >= len(p.parser.GetLiteralNames()) {
+	if p.parser != nil && p.parser.GetSymbolicNames() != nil {
+		if t >= len(p.parser.GetSymbolicNames()) {
 			fmt.Println(strconv.Itoa(t) + " ttype out of range: " + strings.Join(p.parser.GetLiteralNames(), ","))
 			//			fmt.Println(p.parser.GetInputStream().(TokenStream).GetAllText()) // p seems incorrect
 		} else {
-			return p.parser.GetLiteralNames()[t] + "<" + strconv.Itoa(t) + ">"
+			return p.parser.GetSymbolicNames()[t] + "<" + strconv.Itoa(t) + ">"
 		}
 	}
 
@@ -1464,7 +1465,7 @@ func (p *ParserATNSimulator) addDFAEdge(dfa *DFA, from *DFAState, t int, to *DFA
 	if ParserATNSimulatorDebug {
 		var names []string
 		if p.parser != nil {
-			names = p.parser.GetLiteralNames()
+			names = p.parser.GetSymbolicNames()
 		}
 
 		fmt.Println("DFA=\n" + dfa.String(names, nil))
@@ -1503,15 +1504,15 @@ func (p *ParserATNSimulator) addDFAState(dfa *DFA, d *DFAState) *DFAState {
 	}
 	dfa.setState(d, d)
 	if ParserATNSimulatorDebug {
-		fmt.Println("adding NewDFA state: " + d.String())
+		fmt.Println("adding new DFA state: " + d.String())
 	}
 	return d
 }
 
 func (p *ParserATNSimulator) ReportAttemptingFullContext(dfa *DFA, conflictingAlts *BitSet, configs ATNConfigSet, startIndex, stopIndex int) {
 	if ParserATNSimulatorDebug || ParserATNSimulatorRetryDebug {
-		interval := NewInterval(startIndex, stopIndex+1)
-		fmt.Println("ReportAttemptingFullContext decision=" + strconv.Itoa(dfa.decision) + ":" + configs.String() +
+		interval := NewInterval(startIndex, stopIndex)
+		fmt.Println("reportAttemptingFullContext decision=" + strconv.Itoa(dfa.decision) + ":" + configs.String() +
 			", input=" + p.parser.GetTokenStream().GetTextFromInterval(interval))
 	}
 	if p.parser != nil {
@@ -1521,8 +1522,8 @@ func (p *ParserATNSimulator) ReportAttemptingFullContext(dfa *DFA, conflictingAl
 
 func (p *ParserATNSimulator) ReportContextSensitivity(dfa *DFA, prediction int, configs ATNConfigSet, startIndex, stopIndex int) {
 	if ParserATNSimulatorDebug || ParserATNSimulatorRetryDebug {
-		interval := NewInterval(startIndex, stopIndex+1)
-		fmt.Println("ReportContextSensitivity decision=" + strconv.Itoa(dfa.decision) + ":" + configs.String() +
+		interval := NewInterval(startIndex, stopIndex)
+		fmt.Println("reportContextSensitivity decision=" + strconv.Itoa(dfa.decision) + ":" + configs.String() +
 			", input=" + p.parser.GetTokenStream().GetTextFromInterval(interval))
 	}
 	if p.parser != nil {
@@ -1534,8 +1535,8 @@ func (p *ParserATNSimulator) ReportContextSensitivity(dfa *DFA, prediction int, 
 func (p *ParserATNSimulator) ReportAmbiguity(dfa *DFA, D *DFAState, startIndex, stopIndex int,
 	exact bool, ambigAlts *BitSet, configs ATNConfigSet) {
 	if ParserATNSimulatorDebug || ParserATNSimulatorRetryDebug {
-		interval := NewInterval(startIndex, stopIndex+1)
-		fmt.Println("ReportAmbiguity " + ambigAlts.String() + ":" + configs.String() +
+		interval := NewInterval(startIndex, stopIndex)
+		fmt.Println("reportAmbiguity " + ambigAlts.String() + ":" + configs.String() +
 			", input=" + p.parser.GetTokenStream().GetTextFromInterval(interval))
 	}
 	if p.parser != nil {
